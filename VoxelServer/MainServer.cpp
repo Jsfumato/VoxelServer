@@ -80,7 +80,7 @@ bool MainServer::InitServer()
 	if (isInit == false)
 		return false;
 
-	for (int i = 0; i < m_SystemInfo.dwNumberOfProcessors; ++i)
+	for (int i = 0; i < m_SystemInfo.dwNumberOfProcessors *2; ++i)
 	{
 		auto hThread = (HANDLE)_beginthreadex(NULL, 0, WorkerThread, (LPVOID)this, 0, NULL);
 		threadHandleDeque.push_back(hThread);
@@ -151,7 +151,7 @@ void MainServer::_AcceptThread()
 		// TODO: pSession 확인
 		CreateIoCompletionPort((HANDLE)hClntSock, m_hCompletionPort, (ULONG_PTR)pSession, 0);
 	
-		std::cout <<  "[ Accept ] : " << inet_ntoa(clientAddress.sin_addr) << std::endl;
+		std::cout <<  "[ Accept ] : " << inet_ntoa(clientAddress.sin_addr) << " " << pSession << std::endl;
 
 		DWORD recvBytes = 0;
 		DWORD flags = 0;
@@ -183,7 +183,7 @@ void MainServer::_WorkerThread()
 			// ERROR 처리
 			m_SessionManager->CloseSession(pSession);
 			std::cout << "[ Close Session ] : " << inet_ntoa(pSession->m_ClientAddress.sin_addr) << std::endl;
-			break;
+			continue;
 		}
 
 		if (pContext == pSession->m_RecvContext)
