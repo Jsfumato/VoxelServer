@@ -190,6 +190,7 @@ SQLtoNetPacket DBManager::SQLProcess()
 		snPkt.length = 62 * result.size() + PACKET_HEADER_SIZE + 2;
 
 		char* ret = new char[snPkt.length];
+		memset(ret, 0, snPkt.length);
 
 		PacketHeader pHeader;
 		pHeader.pID = PACKETID::RES_GET_DUNGEON_LIST;

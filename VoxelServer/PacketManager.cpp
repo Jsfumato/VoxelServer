@@ -309,7 +309,7 @@ void PacketManager::ProcessDBQueue()
 
 		MapData** arr_MapDataArr = (MapData**)snPkt.pBuffer;
 
-		// 해당 데이터의 0 인덱스에는 사이즈가 들어있음
+		//// 해당 데이터의 0 인덱스에는 사이즈가 들어있음
 		for (int i = 1; i <= roomNum; ++i)
 		{
 			short blockNum = arr_MapDataArr[i][0].posX;
@@ -322,7 +322,8 @@ void PacketManager::ProcessDBQueue()
 
 			memcpy(&buffer[0], &pHeader, 4);
 			memcpy(&buffer[PACKET_HEADER_SIZE], &blockNum, 2);
-			std::copy(&arr_MapDataArr[i][1], &arr_MapDataArr[i][blockNum], &buffer[6]);
+			memcpy(&buffer[6], &arr_MapDataArr[i][1], sizeof(MapData) * blockNum);
+			// std::copy(&arr_MapDataArr[i][1], &arr_MapDataArr[i][blockNum], &buffer[6]);
 
 			AppendToSendPacketQueue(
 				(Session*)snPkt.pSession,
