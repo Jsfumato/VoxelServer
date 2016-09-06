@@ -184,6 +184,7 @@ void PacketManager::ProcessRecvPacketQueue()
 		SQLPacket sPkt;
 		sPkt.sType = SQL_TYPE::SAVE_DUNGEON_NAME_INFO;
 		sPkt.sBody = new SaveDungeonNameInfoBody();
+		sPkt.pSession = (void*)packet.pSession;
 		auto body = (SaveDungeonNameInfoBody*)sPkt.sBody;
 
 		std::copy(&packet.buffer[PACKET_HEADER_SIZE], &packet.buffer[PACKET_HEADER_SIZE + 10], body->uID);
@@ -204,6 +205,7 @@ void PacketManager::ProcessRecvPacketQueue()
 		SQLPacket sPkt;
 		sPkt.sType = SQL_TYPE::SAVE_DUNGEON_BLOCK_DATA;
 		sPkt.sBody = new SaveDungeonMapDataBody();
+		sPkt.pSession = (void*)packet.pSession;
 		auto body = (SaveDungeonMapDataBody*)sPkt.sBody;
 		
 		memcpy(&body->roomNum, &packet.buffer[PACKET_HEADER_SIZE], 2);
@@ -247,6 +249,25 @@ void PacketManager::ProcessRecvPacketQueue()
 	}
 	break;
 
+	case PACKETID::REQ_GET_MAPDATA:
+	{
+		m_Mutex.lock();
+		std::cout << "[ REQ_GET_MAPDATA ] from : " << inet_ntoa(packet.pSession->m_ClientAddress.sin_addr) << std::endl;
+		m_Mutex.unlock();
+
+		SQLPacket sqlPkt;
+		sqlPkt.sType = SQL_TYPE::GET_MAP_DATA;
+		sqlPkt.sBody = new GetMapDataPacket();
+		sqlPkt.pSession = (void*)packet.pSession;
+
+		auto body = (GetMapDataPacket*)sqlPkt.sBody;
+
+		memcpy(&body->uID, &packet.buffer[PACKET_HEADER_SIZE], 10);
+		memcpy(&body->dID, &packet.buffer[PACKET_HEADER_SIZE + 10], 10);
+
+		m_DBManager->AddToSqlQueue(sqlPkt);
+	}
+
 	default:
 		break;
 	}
@@ -269,6 +290,7 @@ void PacketManager::ProcessDBQueue()
 	case PACKETID::RES_GET_DUNGEON_LIST:
 	case PACKETID::RES_LOGIN:
 	case PACKETID::RES_REGISTER_USER:
+	case PACKETID::RES_SAVE_MAP_NAME_INFO:
 	{
 		AppendToSendPacketQueue(
 			(Session*)snPkt.pSession, 
@@ -278,6 +300,42 @@ void PacketManager::ProcessDBQueue()
 		);
 	}
 	break;
+
+	case PACKETID::RES_GET_MAPDATA:
+	{
+		// 초기값 부여
+		short roomNum = 1;
+		memcpy(&roomNum, &snPkt.pBuffer[2], 2);
+
+		MapData** arr_MapDataArr = (MapData**)snPkt.pBuffer;
+
+		// 해당 데이터의 0 인덱스에는 사이즈가 들어있음
+		for (int i = 1; i <= roomNum; ++i)
+		{
+			short blockNum = arr_MapDataArr[i][0].posX;
+			short totalLen = sizeof(MapData) * blockNum + PACKET_HEADER_SIZE + 2;
+			char* buffer = new char[totalLen];
+
+			PacketHeader pHeader;
+			pHeader.pID = PACKETID::RES_GET_MAPDATA;
+			pHeader.bodySize = sizeof(MapData) * blockNum + 2;
+
+			memcpy(&buffer[0], &pHeader, 4);
+			memcpy(&buffer[PACKET_HEADER_SIZE], &blockNum, 2);
+			std::copy(&arr_MapDataArr[i][1], &arr_MapDataArr[i][blockNum], &buffer[6]);
+
+			AppendToSendPacketQueue(
+				(Session*)snPkt.pSession,
+				buffer,
+				(PACKETID)snPkt.packetID,
+				totalLen
+			);
+		}
+	}
+	break;
+
+	default:
+		break;
 	}
 }
 

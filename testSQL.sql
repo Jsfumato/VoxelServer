@@ -106,6 +106,3 @@ call SaveDungeonNameInfo("aaaaaaaaaa", "testDun", "INFOINFOINFO");
 
 SELECT * FROM mapData;
 DELETE FROM mapData;
-
-call GetDungeonList(2);
-call SaveDungeonNameInfo('u817665694', 'test￣ﾅﾄ￣ﾅﾂ', 'testtest', 2);

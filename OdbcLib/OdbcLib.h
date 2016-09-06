@@ -17,12 +17,17 @@ public:
 
 	std::vector<std::vector<std::string>> SelectFrom(std::string dbName, std::string tableName);
 	
-	bool CallSaveDungeonNameInfo(std::string uID, std::string dName, std::string dInfo, int hasRoomNum);
+
+	std::vector<std::vector<std::string>> CallSaveDungeonNameInfo(std::string uID, std::string dName, std::string dInfo, int hasRoomNum);
 	bool CallSaveMapData(std::string uID, std::string dID, short roomNum, short bType, short posX, short posY, short posZ, float rotate);
 
 	std::vector<std::vector<std::string>> CallGetDungeonList(short num);
 	std::vector<std::vector<std::string>> CallGetUserData(std::string email, std::string ps);
 	std::vector<std::vector<std::string>> CallRegisterUser(std::string email, std::string pw);
+
+	std::vector<std::vector<std::string>> CallGetRoomNum(std::string uID, std::string dID);
+
+	std::vector<std::vector<std::string>> CallGetBlockDataByRoomNum(std::string uID, std::string dID, int roomNumber);
 
 private:
 	Odbc();

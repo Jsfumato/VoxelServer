@@ -119,13 +119,30 @@ SQLtoNetPacket DBManager::SQLProcess()
 	{
 		SaveDungeonNameInfoBody* body = (SaveDungeonNameInfoBody*)sPkt.sBody;
 
-		bool result = m_MySQL->CallSaveDungeonNameInfo(
+		auto result = m_MySQL->CallSaveDungeonNameInfo(
 			std::string(body->uID).substr(0, 10),
 			std::string(body->dName).substr(0, 10),
 			std::string(body->dInfo).substr(0, 30),
 			body->roomNum
 		);
-		std::cout << "[ SQL Process ] SAVE_DUNGEON_NAME_INFO : " << result << std::endl;
+
+		auto dID = result[0][0].c_str();
+
+		snPkt.pSession = sPkt.pSession;
+		snPkt.packetID = (short)PACKETID::RES_SAVE_MAP_NAME_INFO;
+		snPkt.length = PACKET_HEADER_SIZE + 10;
+		char* ret = new char[snPkt.length];
+
+		PacketHeader pHeader;
+		pHeader.pID = PACKETID::RES_SAVE_MAP_NAME_INFO;
+		pHeader.bodySize = 10;
+
+		memcpy(&ret[0], &pHeader, 4);
+		std::copy(&dID[0], &dID[10], &ret[PACKET_HEADER_SIZE]);
+
+		std::cout << "[ SQL Process ] SAVE_DUNGEON_NAME_INFO | dID : " << dID << std::endl;
+
+		snPkt.pBuffer = ret;
 	}
 	break;
 
@@ -195,6 +212,55 @@ SQLtoNetPacket DBManager::SQLProcess()
 		}
 
 		snPkt.pBuffer = ret;
+	}
+	break;
+
+	case SQL_TYPE::GET_MAP_DATA:
+	{
+		GetMapDataPacket* body = (GetMapDataPacket*)sPkt.sBody;
+
+		snPkt.pSession = sPkt.pSession;
+		snPkt.packetID = (short)PACKETID::RES_GET_MAPDATA;
+
+		auto result = m_MySQL->CallGetRoomNum(body->uID, body->dID);
+
+		// 1개를 더 할당하여 0 인덱스는 데이터 보관에 사용
+		// 포인터는 64bit에서는 8바이트, 여유롭게 보관 가능
+		MapData** retmap = new MapData*[atoi(result[0][0].c_str()) +1];
+
+		PacketHeader pHeader;
+		pHeader.pID = PACKETID::RES_GET_MAPDATA;
+		// 어차피 새로 생성해서 보낼 패킷들
+		pHeader.bodySize = atoi(result[0][0].c_str());
+		
+		memcpy(&retmap[0], &pHeader, 4);
+
+		for (int curRoomNum = 1; curRoomNum <= atoi(result[0][0].c_str()); ++curRoomNum)
+		{
+			auto blockData = m_MySQL->CallGetBlockDataByRoomNum(body->uID, body->dID, curRoomNum);
+			MapData* mDataArr = new MapData[blockData.size() + 1];
+
+			// 특별히 0번째 posX에는 사이즈를 넣어줌
+			mDataArr[0].posX = blockData.size();
+			for (int i = 1; i <= blockData.size(); ++i)
+			{
+				mDataArr[i].bType = atoi(blockData[i][3].c_str());
+				mDataArr[i].posX = atoi(blockData[i][4].c_str());
+				mDataArr[i].posY = atoi(blockData[i][5].c_str());
+				mDataArr[i].posZ = atoi(blockData[i][6].c_str());
+				mDataArr[i].rotate = atof(blockData[i][7].c_str());
+			}
+
+			retmap[curRoomNum] = mDataArr;
+		}
+
+		snPkt.length = PACKET_HEADER_SIZE + sizeof(retmap);
+		//char* ret = new char[snPkt.length];
+
+		
+		// TODO: 포인터 주소만을 이용한 혼돈의 데이터 넘기기
+		// safe 하지 않음
+		snPkt.pBuffer = (char*)retmap;
 	}
 	break;
 

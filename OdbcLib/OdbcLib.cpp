@@ -114,10 +114,12 @@ std::vector<std::vector<std::string>> Odbc::SelectFrom(std::string dbName, std::
 	}
 }
 
-bool Odbc::CallSaveDungeonNameInfo(std::string uID, std::string dName, std::string dInfo, int hasRoomNum)
+std::vector<std::vector<std::string>> Odbc::CallSaveDungeonNameInfo(std::string uID, std::string dName, std::string dInfo, int hasRoomNum)
 {
+	std::vector<std::vector<std::string>> retVector = std::vector<std::vector<std::string>>();
+
 	if (!_IsConnect || _Inst == nullptr)
-		return false;
+		return retVector;
 
 	std::wstring query = fmt::format(L"call SaveDungeonNameInfo('{0}', '{1}', '{2}', {3})", uID, dName, dInfo, hasRoomNum);
 
@@ -126,9 +128,33 @@ bool Odbc::CallSaveDungeonNameInfo(std::string uID, std::string dName, std::stri
 	ret = SQLExecDirect(_hStmt, sql, SQL_NTS);
 
 	if (ret == SQL_SUCCESS)
-		return true;
-	else
-		return false;
+	{
+		SQLLEN resultLen;
+		SQLSMALLINT columns;
+
+		while (true)
+		{
+			ret = SQLFetch(_hStmt);
+			SQLNumResultCols(_hStmt, &columns);
+
+			if (ret == SQL_NO_DATA || ret == SQL_ERROR || ret == SQL_SUCCESS_WITH_INFO)
+				return retVector;
+
+			//			SELECT
+			if (ret == SQL_SUCCESS)
+			{
+				auto record = std::vector<std::string>();
+				for (int i = 1; i <= columns; ++i)
+				{
+					char strResult[200];
+					SQLGetData(_hStmt, i, SQL_C_CHAR, strResult, 200, &resultLen);
+					record.push_back(strResult);
+				}
+				retVector.push_back(record);
+			}
+		}
+		return retVector;
+	}
 }
 
 bool Odbc::CallSaveMapData(std::string uID, std::string dID, short roomNum, short bType, short posX, short posY, short posZ, float rotate)
@@ -277,4 +303,92 @@ std::vector<std::vector<std::string>> Odbc::CallRegisterUser(std::string email, 
 		return retVector;
 	}
 }
+
+std::vector<std::vector<std::string>> Odbc::CallGetRoomNum(std::string uID, std::string dID)
+{
+	std::vector<std::vector<std::string>> retVector = std::vector<std::vector<std::string>>();
+
+	if (!_IsConnect || _Inst == nullptr)
+		return retVector;
+
+	std::wstring query = fmt::format(L"call GetMapTileNum('{0}', '{1}')", uID, dID);
+
+	SQLWCHAR* sql = (SQLWCHAR*)query.c_str();
+	int ret = SQLAllocHandle(SQL_HANDLE_STMT, _hDbc, &_hStmt);
+	ret = SQLExecDirect(_hStmt, sql, SQL_NTS);
+
+	if (ret == SQL_SUCCESS)
+	{
+		SQLLEN resultLen;
+		SQLSMALLINT columns;
+
+		while (true)
+		{
+			ret = SQLFetch(_hStmt);
+			SQLNumResultCols(_hStmt, &columns);
+
+			if (ret == SQL_NO_DATA || ret == SQL_ERROR || ret == SQL_SUCCESS_WITH_INFO)
+				return retVector;
+
+			//			SELECT
+			if (ret == SQL_SUCCESS)
+			{
+				auto record = std::vector<std::string>();
+				for (int i = 1; i <= columns; ++i)
+				{
+					char strResult[200];
+					SQLGetData(_hStmt, i, SQL_C_CHAR, strResult, 200, &resultLen);
+					record.push_back(strResult);
+				}
+				retVector.push_back(record);
+			}
+		}
+		return retVector;
+	}
+}
+
+std::vector<std::vector<std::string>> Odbc::CallGetBlockDataByRoomNum(std::string uID, std::string dID, int roomNumber)
+{
+	std::vector<std::vector<std::string>> retVector = std::vector<std::vector<std::string>>();
+
+	if (!_IsConnect || _Inst == nullptr)
+		return retVector;
+
+	std::wstring query = fmt::format(L"call GetBlockDataByRoomNum('{0}', '{1}', {2})", uID, dID, roomNumber);
+
+	SQLWCHAR* sql = (SQLWCHAR*)query.c_str();
+	int ret = SQLAllocHandle(SQL_HANDLE_STMT, _hDbc, &_hStmt);
+	ret = SQLExecDirect(_hStmt, sql, SQL_NTS);
+
+	if (ret == SQL_SUCCESS)
+	{
+		SQLLEN resultLen;
+		SQLSMALLINT columns;
+
+		while (true)
+		{
+			ret = SQLFetch(_hStmt);
+			SQLNumResultCols(_hStmt, &columns);
+
+			if (ret == SQL_NO_DATA || ret == SQL_ERROR || ret == SQL_SUCCESS_WITH_INFO)
+				return retVector;
+
+			//			SELECT
+			if (ret == SQL_SUCCESS)
+			{
+				auto record = std::vector<std::string>();
+				for (int i = 1; i <= columns; ++i)
+				{
+					char strResult[200];
+					SQLGetData(_hStmt, i, SQL_C_CHAR, strResult, 200, &resultLen);
+					record.push_back(strResult);
+				}
+				retVector.push_back(record);
+			}
+		}
+		return retVector;
+	}
+}
+
+
 

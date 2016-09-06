@@ -15,7 +15,7 @@ enum class SQL_TYPE :short
 	SAVE_DUNGEON_BLOCK_DATA = 11,
 
 	GET_DUNGEON_LIST = 20,
-	GET_DUNGEON_NAME_INFO = 21,
+	GET_MAP_DATA = 21,
 };
 
 #pragma pack(push, 1)
@@ -88,6 +88,13 @@ struct GetDungeonListBody : SQLBody
 {
 	short numToGet;
 };
+
+struct GetMapDataPacket : SQLBody
+{
+	char uID[10] = { 0 };
+	char dID[10] = { 0 };
+};
+
 #pragma pack(pop)
 
 
