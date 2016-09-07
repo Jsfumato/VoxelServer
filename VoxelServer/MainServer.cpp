@@ -181,8 +181,8 @@ void MainServer::_WorkerThread()
 		{
 			// recv 또는 send의 크기가 0 이하?
 			// ERROR 처리
-			m_SessionManager->CloseSession(pSession);
 			std::cout << "[ Close Session ] : " << inet_ntoa(pSession->m_ClientAddress.sin_addr) << std::endl;
+			m_SessionManager->CloseSession(pSession);
 			continue;
 		}
 
